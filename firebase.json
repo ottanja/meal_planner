@@ -1,7 +1,6 @@
 {
   "hosting": {
-    
-    "public": "dist/mealPlanner",
+    "public": "dist/meal-planner",
     "ignore": [
       "firebase.json",
       "**/.*",
@@ -15,4 +14,3 @@
     ]
   }
 }
-
