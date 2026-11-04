@@ -4,8 +4,18 @@
   <h2>{{ viewDate | date: 'MMMM yyyy' }}</h2>
 
   <mwl-calendar-month-view
-    [viewDate]="viewDate"
-    [events]="events"
-    (dayClicked)="dayClicked($event)">
-  </mwl-calendar-month-view>
+  [viewDate]="viewDate"
+  [events]="events"
+  [cellTemplate]="customCell"
+  (dayClicked)="dayClicked($event)">
+</mwl-calendar-month-view>
+
+<ng-template #customCell let-day="day">
+  <div class="cal-cell-top">
+    <span class="cal-day-number">{{ day.date | date: 'd' }}</span>
+  </div>
+  @for (event of day.events; track $index) {
+    <div class="day-text">{{ event.title }}</div>
+  }
+</ng-template>
 </div>

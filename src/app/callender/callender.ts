@@ -21,10 +21,13 @@ import { adapterFactory } from 'angular-calendar/date-adapters/date-fns';
 export class Callender {
   viewDate = new Date();
   events: CalendarEvent[] = [
-    { start: new Date(), title: 'An event today' },
-  ];
+  { start: new Date(), title: 'Today: Pasta' },
+  { start: new Date(2026, 10, 12), title: 'Lunch: Salad' },   // month is 0-based: 10 = November
+  { start: new Date(2026, 10, 12), title: 'Dinner: Curry' },
+];
 
   dayClicked({ day }: { day: { date: Date } }): void {
     console.log('Clicked on date:', day.date);
   }
 }
+
