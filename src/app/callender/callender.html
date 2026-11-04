@@ -1,21 +1,90 @@
-<h3>Month Calendar</h3>
+<h3>Meal Planner</h3>
 
-<div style="padding: 20px;">
-  <h2>{{ viewDate | date: 'MMMM yyyy' }}</h2>
+<div class="page">
+  <label class="name-field">
+    Your name
+    <input [(ngModel)]="userName" placeholder="e.g. Anja" />
+  </label>
 
   <mwl-calendar-month-view
-  [viewDate]="viewDate"
-  [events]="events"
-  [cellTemplate]="customCell"
-  (dayClicked)="dayClicked($event)">
-</mwl-calendar-month-view>
+    [viewDate]="viewDate"
+    [events]="events()"
+    [cellTemplate]="customCell"
+    (dayClicked)="dayClicked($event)">
+  </mwl-calendar-month-view>
 
-<ng-template #customCell let-day="day">
-  <div class="cal-cell-top">
-    <span class="cal-day-number">{{ day.date | date: 'd' }}</span>
-  </div>
-  @for (event of day.events; track $index) {
-    <div class="day-text">{{ event.title }}</div>
+  <ng-template #customCell let-day="day">
+    <div class="cal-cell-top">
+      <span class="cal-day-number">{{ day.date | date: 'd' }}</span>
+    </div>
+    @for (event of day.events; track $index) {
+      <div class="day-text">{{ event.title }}</div>
+    }
+  </ng-template>
+
+  @if (selectedDate(); as date) {
+    <section class="panel">
+      <h3>{{ date | date: 'fullDate' }}</h3>
+
+      @if (selectedEntry(); as entry) {
+
+        @if (editing()) {
+          <input [(ngModel)]="editDish" placeholder="What are you cooking?" />
+          <input type="time" [(ngModel)]="editTime" />
+          <button (click)="saveEdit()" [disabled]="!editDish.trim() || !editTime">Save</button>
+          <button (click)="cancelEdit()">Cancel</button>
+        } @else {
+          <p>
+            <strong>{{ entry.cook }}</strong> is cooking
+            <strong>{{ entry.dish }}</strong> at <strong>{{ entry.time }}</strong>
+          </p>
+
+          @if (isCook(entry)) {
+            @if (confirmingDelete()) {
+              <p>Delete this? Joiners and notes will be removed too.</p>
+              <button (click)="deleteEntry()">Yes, delete</button>
+              <button (click)="confirmingDelete.set(false)">Cancel</button>
+            } @else {
+              <button (click)="startEdit(entry)">Edit</button>
+              <button (click)="confirmingDelete.set(true)">Delete</button>
+            }
+          }
+        }
+
+        @if (entry.joiners.length) {
+          <p>Joining: {{ entry.joiners.join(', ') }}</p>
+        }
+
+        @if (canJoin(entry)) {
+          @if (confirmingJoin()) {
+            <p>Join {{ entry.cook }}'s meal on this day?</p>
+            <button (click)="confirmJoin()">Yes, I'm joining</button>
+            <button (click)="confirmingJoin.set(false)">Cancel</button>
+          } @else {
+            <button (click)="confirmingJoin.set(true)">Join this meal</button>
+          }
+        }
+
+        <h4>Notes</h4>
+        @for (note of entry.notes; track $index) {
+          <p class="note"><strong>{{ note.author }}:</strong> {{ note.text }}</p>
+        } @empty {
+          <p class="muted">No notes yet.</p>
+        }
+
+        <input [(ngModel)]="noteText" placeholder="Add a note..." />
+        <button (click)="addNote()" [disabled]="!userName.trim() || !noteText.trim()">
+          Add note
+        </button>
+
+      } @else {
+        <p class="muted">Nobody is cooking yet. Sign up!</p>
+        <input [(ngModel)]="dish" placeholder="What are you cooking?" />
+        <input type="time" [(ngModel)]="time" />
+        <button (click)="signUp()" [disabled]="!userName.trim() || !dish.trim()">
+          I'll cook
+        </button>
+      }
+    </section>
   }
-</ng-template>
 </div>

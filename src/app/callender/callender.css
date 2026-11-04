@@ -1,0 +1,6 @@
+.page { padding: 20px; max-width: 900px; margin: 0 auto; }
+.name-field { display: block; margin-bottom: 16px; }
+.panel { margin-top: 24px; padding: 16px; border: 1px solid #ccc; border-radius: 8px; }
+.panel input { margin-right: 8px; }
+.note { margin: 4px 0; }
+.muted { color: #777; }
