@@ -42,9 +42,11 @@
               <input [(ngModel)]="editDish" placeholder="What are you cooking?" />
               <input type="time" [(ngModel)]="editTime" />
             </div>
-            <button class="btn primary" (click)="saveEdit()"
-                    [disabled]="!editDish.trim() || !editTime">Save</button>
-            <button class="btn" (click)="cancelEdit()">Cancel</button>
+            <div class="actions">
+              <button class="btn primary" (click)="saveEdit()"
+                      [disabled]="!editDish.trim() || !editTime">Save</button>
+              <button class="btn" (click)="cancelEdit()">Cancel</button>
+            </div>
           } @else {
             <p>
               <strong>{{ entry.cook }}</strong> is cooking
@@ -54,11 +56,15 @@
             @if (isCook(entry)) {
               @if (confirmingDelete()) {
                 <p>Delete this? Joiners and notes will be removed too.</p>
-                <button class="btn danger" (click)="deleteEntry()">Yes, delete</button>
-                <button class="btn" (click)="confirmingDelete.set(false)">Cancel</button>
+                <div class="actions">
+                  <button class="btn danger" (click)="deleteEntry()">Yes, delete</button>
+                  <button class="btn" (click)="confirmingDelete.set(false)">Cancel</button>
+                </div>
               } @else {
-                <button class="btn" (click)="startEdit(entry)">Edit</button>
-                <button class="btn danger" (click)="confirmingDelete.set(true)">Delete</button>
+                <div class="actions">
+                  <button class="btn" (click)="startEdit(entry)">Edit</button>
+                  <button class="btn danger" (click)="confirmingDelete.set(true)">Delete</button>
+                </div>
               }
             }
           }
@@ -70,20 +76,28 @@
           @if (canJoin(entry)) {
             @if (confirmingJoin()) {
               <p>Join {{ entry.cook }}'s meal on this day?</p>
-              <button class="btn primary" (click)="confirmJoin()">Yes, I'm joining</button>
-              <button class="btn" (click)="confirmingJoin.set(false)">Cancel</button>
+              <div class="actions">
+                <button class="btn primary" (click)="confirmJoin()">Yes, I'm joining</button>
+                <button class="btn" (click)="confirmingJoin.set(false)">Cancel</button>
+              </div>
             } @else {
-              <button class="btn primary" (click)="confirmingJoin.set(true)">Join this meal</button>
+              <div class="actions">
+                <button class="btn primary" (click)="confirmingJoin.set(true)">Join this meal</button>
+              </div>
             }
           }
 
           @if (isJoined(entry)) {
             @if (confirmingLeave()) {
               <p>Leave {{ entry.cook }}'s meal on this day?</p>
-              <button class="btn danger" (click)="leaveMeal()">Yes, leave</button>
-              <button class="btn" (click)="confirmingLeave.set(false)">Cancel</button>
+              <div class="actions">
+                <button class="btn danger" (click)="leaveMeal()">Yes, leave</button>
+                <button class="btn" (click)="confirmingLeave.set(false)">Cancel</button>
+              </div>
             } @else {
-              <button class="btn" (click)="confirmingLeave.set(true)">Leave this meal</button>
+              <div class="actions">
+                <button class="btn" (click)="confirmingLeave.set(true)">Leave this meal</button>
+              </div>
             }
           }
 
@@ -107,9 +121,11 @@
             <input [(ngModel)]="dish" placeholder="What are you cooking?" />
             <input type="time" [(ngModel)]="time" />
           </div>
-          <button class="btn primary" (click)="signUp()" [disabled]="!dish.trim()">
-            I'll cook
-          </button>
+          <div class="actions">
+            <button class="btn primary" (click)="signUp()" [disabled]="!dish.trim()">
+              I'll cook
+            </button>
+          </div>
         }
       </section>
     }

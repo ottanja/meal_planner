@@ -1,4 +1,5 @@
 .page { padding: 20px; max-width: 900px; margin: 0 auto; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
 
 .topbar {
   display: flex;
