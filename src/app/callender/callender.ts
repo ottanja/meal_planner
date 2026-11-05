@@ -27,17 +27,18 @@ import {
   updateDoc,
   deleteDoc,
   arrayUnion,
+  arrayRemove,
 } from '@angular/fire/firestore';
 
 interface Note { author: string; text: string; }
 
 interface CookingEntry {
-  dateKey: string;      // 'yyyy-MM-dd', also used as the document id
+  dateKey: string;      // 'yyyy-MM-dd', also the document id
   dish: string;
   time: string;         // 'HH:mm'
   cook: string;         // display name of the cook
-  cookUid: string;      // Firebase auth uid, required by the security rules
-  joiners: string[];
+  cookUid: string;      // Firebase user id of the cook (used by the security rules)
+  joiners: string[];    // display names
   notes: Note[];
 }
 
@@ -51,17 +52,21 @@ interface CookingEntry {
   styleUrl: './callender.css',
 })
 export class Callender {
-  private firestore = inject(Firestore);
   private auth = inject(Auth);
+  private firestore = inject(Firestore);
   private cookings = collection(this.firestore, 'cookings');
 
   viewDate = new Date();
 
-  // auth state: null while signed out
-  currentUser = toSignal(user(this.auth), { initialValue: null });
+  // --- auth ---
+  user = toSignal(user(this.auth), { initialValue: null });
 
-  // live data: only subscribes to Firestore while someone is signed in,
-  // because the rules deny reads for unauthenticated users
+  get userName(): string {
+    const u = this.user();
+    return u?.displayName ?? u?.email ?? '';
+  }
+
+  // --- data: only subscribes once signed in (the rules require login) ---
   entries = toSignal(
     user(this.auth).pipe(
       switchMap(u =>
@@ -73,25 +78,21 @@ export class Callender {
     { initialValue: [] as CookingEntry[] }
   );
 
-  // UI state
+  // --- UI state ---
   selectedDate = signal<Date | null>(null);
   confirmingJoin = signal(false);
+  confirmingLeave = signal(false);
   confirmingDelete = signal(false);
   editing = signal(false);
 
-  // form fields
+  // --- form fields ---
   dish = '';
-  time = '00:00';
+  time = '18:00';
   noteText = '';
   editDish = '';
   editTime = '';
 
-  // derived state
-  userName = computed(() => {
-    const u = this.currentUser();
-    return (u?.displayName ?? u?.email ?? '').trim();
-  });
-
+  // --- derived state ---
   selectedKey = computed(() => {
     const d = this.selectedDate();
     return d ? format(d, 'yyyy-MM-dd') : null;
@@ -108,7 +109,29 @@ export class Callender {
     }))
   );
 
-  // auth actions
+  // --- helpers ---
+  private entryRef(key: string) {
+    return doc(this.firestore, 'cookings', key);
+  }
+
+  isCook(entry: CookingEntry): boolean {
+    const uid = this.user()?.uid;
+    return !!uid && entry.cookUid === uid;
+  }
+
+  canJoin(entry: CookingEntry): boolean {
+    return (
+      !!this.userName &&
+      !this.isCook(entry) &&
+      !entry.joiners.includes(this.userName)
+    );
+  }
+
+  isJoined(entry: CookingEntry): boolean {
+    return !!this.userName && entry.joiners.includes(this.userName);
+  }
+
+  // --- auth actions ---
   async login(): Promise<void> {
     try {
       await signInWithPopup(this.auth, new GoogleAuthProvider());
@@ -118,33 +141,15 @@ export class Callender {
   }
 
   async logout(): Promise<void> {
-    try {
-      await signOut(this.auth);
-      this.selectedDate.set(null);
-    } catch (err) {
-      console.error('Logout failed', err);
-    }
+    await signOut(this.auth);
+    this.selectedDate.set(null);
   }
 
-  // helpers
-  private entryRef(key: string) {
-    return doc(this.firestore, 'cookings', key);
-  }
-
-  isCook(entry: CookingEntry): boolean {
-    const uid = this.currentUser()?.uid;
-    return !!uid && entry.cookUid === uid;
-  }
-
-  canJoin(entry: CookingEntry): boolean {
-    const name = this.userName();
-    return !!name && !this.isCook(entry) && !entry.joiners.includes(name);
-  }
-
-  // actions
+  // --- calendar actions ---
   dayClicked({ day }: { day: { date: Date } }): void {
     this.selectedDate.set(day.date);
     this.confirmingJoin.set(false);
+    this.confirmingLeave.set(false);
     this.confirmingDelete.set(false);
     this.editing.set(false);
     this.noteText = '';
@@ -152,14 +157,14 @@ export class Callender {
 
   async signUp(): Promise<void> {
     const key = this.selectedKey();
-    const u = this.currentUser();
-    if (!key || !u || !this.dish.trim()) return;
+    const uid = this.user()?.uid;
+    if (!key || !uid || !this.dish.trim()) return;
     const entry: CookingEntry = {
       dateKey: key,
       dish: this.dish.trim(),
       time: this.time,
-      cook: this.userName(),
-      cookUid: u.uid, // must equal request.auth.uid
+      cook: this.userName,
+      cookUid: uid,
       joiners: [],
       notes: [],
     };
@@ -210,24 +215,33 @@ export class Callender {
 
   async confirmJoin(): Promise<void> {
     const key = this.selectedKey();
-    const name = this.userName();
-    if (!key || !name) return;
+    if (!key || !this.userName) return;
     try {
-      await updateDoc(this.entryRef(key), { joiners: arrayUnion(name) });
+      await updateDoc(this.entryRef(key), { joiners: arrayUnion(this.userName) });
       this.confirmingJoin.set(false);
     } catch (err) {
       console.error('Join failed', err);
     }
   }
 
+  async leaveMeal(): Promise<void> {
+    const key = this.selectedKey();
+    if (!key || !this.userName) return;
+    try {
+      await updateDoc(this.entryRef(key), { joiners: arrayRemove(this.userName) });
+      this.confirmingLeave.set(false);
+    } catch (err) {
+      console.error('Leaving failed', err);
+    }
+  }
+
   async addNote(): Promise<void> {
     const key = this.selectedKey();
-    const name = this.userName();
     const text = this.noteText.trim();
-    if (!key || !name || !text) return;
+    if (!key || !this.userName || !text) return;
     try {
       await updateDoc(this.entryRef(key), {
-        notes: arrayUnion({ author: name, text }),
+        notes: arrayUnion({ author: this.userName, text }),
       });
       this.noteText = '';
     } catch (err) {
@@ -235,4 +249,3 @@ export class Callender {
     }
   }
 }
-

@@ -1,19 +1,19 @@
 <div class="page">
-  <header class="topbar">
+  <div class="topbar">
     <h3>Meal Planner</h3>
 
-    @if (currentUser(); as u) {
+    @if (user(); as u) {
       <div class="user">
         @if (u.photoURL) {
           <img class="avatar" [src]="u.photoURL" alt="" referrerpolicy="no-referrer" />
         }
-        <span>{{ userName() }}</span>
+        <span>{{ userName }}</span>
         <button class="btn" (click)="logout()">Sign out</button>
       </div>
     }
-  </header>
+  </div>
 
-  @if (currentUser()) {
+  @if (user()) {
 
     <mwl-calendar-month-view
       [viewDate]="viewDate"
@@ -27,7 +27,7 @@
         <span class="cal-day-number">{{ day.date | date: 'd' }}</span>
       </div>
       @for (event of day.events; track $index) {
-        <div class="day-text">{{ event.title }}</div>
+        <div class="day-text" [title]="event.title">{{ event.title }}</div>
       }
     </ng-template>
 
@@ -42,11 +42,9 @@
               <input [(ngModel)]="editDish" placeholder="What are you cooking?" />
               <input type="time" [(ngModel)]="editTime" />
             </div>
-            <div class="row">
-              <button class="btn primary" (click)="saveEdit()"
-                      [disabled]="!editDish.trim() || !editTime">Save</button>
-              <button class="btn" (click)="cancelEdit()">Cancel</button>
-            </div>
+            <button class="btn primary" (click)="saveEdit()"
+                    [disabled]="!editDish.trim() || !editTime">Save</button>
+            <button class="btn" (click)="cancelEdit()">Cancel</button>
           } @else {
             <p>
               <strong>{{ entry.cook }}</strong> is cooking
@@ -56,15 +54,11 @@
             @if (isCook(entry)) {
               @if (confirmingDelete()) {
                 <p>Delete this? Joiners and notes will be removed too.</p>
-                <div class="row">
-                  <button class="btn danger" (click)="deleteEntry()">Yes, delete</button>
-                  <button class="btn" (click)="confirmingDelete.set(false)">Cancel</button>
-                </div>
+                <button class="btn danger" (click)="deleteEntry()">Yes, delete</button>
+                <button class="btn" (click)="confirmingDelete.set(false)">Cancel</button>
               } @else {
-                <div class="row">
-                  <button class="btn" (click)="startEdit(entry)">Edit</button>
-                  <button class="btn danger" (click)="confirmingDelete.set(true)">Delete</button>
-                </div>
+                <button class="btn" (click)="startEdit(entry)">Edit</button>
+                <button class="btn danger" (click)="confirmingDelete.set(true)">Delete</button>
               }
             }
           }
@@ -76,12 +70,20 @@
           @if (canJoin(entry)) {
             @if (confirmingJoin()) {
               <p>Join {{ entry.cook }}'s meal on this day?</p>
-              <div class="row">
-                <button class="btn primary" (click)="confirmJoin()">Yes, I'm joining</button>
-                <button class="btn" (click)="confirmingJoin.set(false)">Cancel</button>
-              </div>
+              <button class="btn primary" (click)="confirmJoin()">Yes, I'm joining</button>
+              <button class="btn" (click)="confirmingJoin.set(false)">Cancel</button>
             } @else {
-              <button class="btn" (click)="confirmingJoin.set(true)">Join this meal</button>
+              <button class="btn primary" (click)="confirmingJoin.set(true)">Join this meal</button>
+            }
+          }
+
+          @if (isJoined(entry)) {
+            @if (confirmingLeave()) {
+              <p>Leave {{ entry.cook }}'s meal on this day?</p>
+              <button class="btn danger" (click)="leaveMeal()">Yes, leave</button>
+              <button class="btn" (click)="confirmingLeave.set(false)">Cancel</button>
+            } @else {
+              <button class="btn" (click)="confirmingLeave.set(true)">Leave this meal</button>
             }
           }
 
@@ -105,7 +107,7 @@
             <input [(ngModel)]="dish" placeholder="What are you cooking?" />
             <input type="time" [(ngModel)]="time" />
           </div>
-          <button class="btn primary" (click)="signUp()" [disabled]="!dish.trim() || !time">
+          <button class="btn primary" (click)="signUp()" [disabled]="!dish.trim()">
             I'll cook
           </button>
         }
@@ -114,7 +116,7 @@
 
   } @else {
     <section class="panel login">
-      <p>Sign in to see and plan meals.</p>
+      <p>Sign in to see the calendar and sign up to cook.</p>
       <button class="btn primary" (click)="login()">Sign in with Google</button>
     </section>
   }
