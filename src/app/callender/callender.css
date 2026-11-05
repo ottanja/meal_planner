@@ -47,9 +47,9 @@
   line-height: 1.3;
   background: #e8f0fe;
   border-radius: 3px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;  /* breaks very long words */
+  text-overflow: clip;
 }
 
 .note { margin: 4px 0; }
