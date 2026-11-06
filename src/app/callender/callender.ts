@@ -9,7 +9,7 @@ import {
   provideCalendar,
 } from 'angular-calendar';
 import { adapterFactory } from 'angular-calendar/date-adapters/date-fns';
-import { format } from 'date-fns';
+import { format, addMonths } from 'date-fns';
 import { Observable, of, switchMap } from 'rxjs';
 import {
   Auth,
@@ -20,6 +20,7 @@ import {
 } from '@angular/fire/auth';
 import {
   Firestore,
+  Timestamp,
   collection,
   collectionData,
   doc,
@@ -40,6 +41,7 @@ interface CookingEntry {
   cookUid: string;      // Firebase user id of the cook (used by the security rules)
   joiners: string[];    // display names
   notes: Note[];
+  expireAt: Timestamp;   // Firestore deletes the document after this time
 }
 
 @Component({
@@ -156,25 +158,27 @@ export class Callender {
   }
 
   async signUp(): Promise<void> {
-    const key = this.selectedKey();
-    const uid = this.user()?.uid;
-    if (!key || !uid || !this.dish.trim()) return;
-    const entry: CookingEntry = {
-      dateKey: key,
-      dish: this.dish.trim(),
-      time: this.time,
-      cook: this.userName,
-      cookUid: uid,
-      joiners: [],
-      notes: [],
-    };
-    try {
-      await setDoc(this.entryRef(key), entry);
-      this.dish = '';
-    } catch (err) {
-      console.error('Sign up failed', err);
-    }
+  const key = this.selectedKey();
+  const date = this.selectedDate();
+  const uid = this.user()?.uid;
+  if (!key || !date || !uid || !this.dish.trim()) return;
+  const entry: CookingEntry = {
+    dateKey: key,
+    dish: this.dish.trim(),
+    time: this.time,
+    cook: this.userName,
+    cookUid: uid,
+    joiners: [],
+    notes: [],
+    expireAt: Timestamp.fromDate(addMonths(date, 1)),
+  };
+  try {
+    await setDoc(this.entryRef(key), entry);
+    this.dish = '';
+  } catch (err) {
+    console.error('Sign up failed', err);
   }
+}
 
   startEdit(entry: CookingEntry): void {
     this.editDish = entry.dish;
