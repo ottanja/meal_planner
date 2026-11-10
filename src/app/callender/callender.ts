@@ -2,6 +2,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import {
   CalendarEvent,
   CalendarMonthViewComponent,
@@ -11,13 +12,7 @@ import {
 import { adapterFactory } from 'angular-calendar/date-adapters/date-fns';
 import { format, addMonths } from 'date-fns';
 import { Observable, of, switchMap } from 'rxjs';
-import {
-  Auth,
-  GoogleAuthProvider,
-  signInWithPopup,
-  signOut,
-  user,
-} from '@angular/fire/auth';
+import { Auth, signOut, user } from '@angular/fire/auth';
 import {
   Firestore,
   Timestamp,
@@ -30,19 +25,7 @@ import {
   arrayUnion,
   arrayRemove,
 } from '@angular/fire/firestore';
-
-interface Note { author: string; text: string; }
-
-interface CookingEntry {
-  dateKey: string;      // 'yyyy-MM-dd', also the document id
-  dish: string;
-  time: string;         // 'HH:mm'
-  cook: string;         // display name of the cook
-  cookUid: string;      // Firebase user id of the cook (used by the security rules)
-  joiners: string[];    // display names
-  notes: Note[];
-  expireAt: Timestamp;   // Firestore deletes the document after this time
-}
+import { CookingEntry } from '../cooking-entry';
 
 @Component({
   selector: 'app-callender',
@@ -56,6 +39,7 @@ interface CookingEntry {
 export class Callender {
   private auth = inject(Auth);
   private firestore = inject(Firestore);
+  private router = inject(Router);
   private cookings = collection(this.firestore, 'cookings');
 
   viewDate = new Date();
@@ -68,7 +52,7 @@ export class Callender {
     return u?.displayName ?? u?.email ?? '';
   }
 
-  // --- data: only subscribes once signed in (the rules require login) ---
+  // --- data: only subscribes while signed in (the rules require login) ---
   entries = toSignal(
     user(this.auth).pipe(
       switchMap(u =>
@@ -133,18 +117,10 @@ export class Callender {
     return !!this.userName && entry.joiners.includes(this.userName);
   }
 
-  // --- auth actions ---
-  async login(): Promise<void> {
-    try {
-      await signInWithPopup(this.auth, new GoogleAuthProvider());
-    } catch (err) {
-      console.error('Login failed', err);
-    }
-  }
-
+  // --- auth ---
   async logout(): Promise<void> {
     await signOut(this.auth);
-    this.selectedDate.set(null);
+    await this.router.navigate(['/']);
   }
 
   // --- calendar actions ---
@@ -158,27 +134,27 @@ export class Callender {
   }
 
   async signUp(): Promise<void> {
-  const key = this.selectedKey();
-  const date = this.selectedDate();
-  const uid = this.user()?.uid;
-  if (!key || !date || !uid || !this.dish.trim()) return;
-  const entry: CookingEntry = {
-    dateKey: key,
-    dish: this.dish.trim(),
-    time: this.time,
-    cook: this.userName,
-    cookUid: uid,
-    joiners: [],
-    notes: [],
-    expireAt: Timestamp.fromDate(addMonths(date, 1)),
-  };
-  try {
-    await setDoc(this.entryRef(key), entry);
-    this.dish = '';
-  } catch (err) {
-    console.error('Sign up failed', err);
+    const key = this.selectedKey();
+    const date = this.selectedDate();
+    const uid = this.user()?.uid;
+    if (!key || !date || !uid || !this.dish.trim()) return;
+    const entry: CookingEntry = {
+      dateKey: key,
+      dish: this.dish.trim(),
+      time: this.time,
+      cook: this.userName,
+      cookUid: uid,
+      joiners: [],
+      notes: [],
+      expireAt: Timestamp.fromDate(addMonths(date, 1)),
+    };
+    try {
+      await setDoc(this.entryRef(key), entry);
+      this.dish = '';
+    } catch (err) {
+      console.error('Sign up failed', err);
+    }
   }
-}
 
   startEdit(entry: CookingEntry): void {
     this.editDish = entry.dish;

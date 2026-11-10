@@ -1,0 +1,19 @@
+.home {
+  max-width: 420px;
+  margin: 80px auto;
+  padding: 24px;
+  text-align: center;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+}
+
+.btn {
+  padding: 8px 16px;
+  border: 1px solid #bbb;
+  border-radius: 4px;
+  background: #fff;
+  font: inherit;
+  cursor: pointer;
+}
+.btn.primary { background: #1a73e8; border-color: #1a73e8; color: #fff; }
+.btn.primary:hover { background: #1765cc; }
