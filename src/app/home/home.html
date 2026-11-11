@@ -1,5 +1,42 @@
 <div class="home">
   <h1>Meal Planner</h1>
   <p>Sign in to see the calendar and sign up to cook.</p>
-  <button class="btn primary" (click)="login()">Sign in with Google</button>
+
+  <form (ngSubmit)="submit()">
+    @if (mode() === 'register') {
+      <input name="displayName" [(ngModel)]="displayName"
+             placeholder="Your name" autocomplete="name" />
+    }
+    <input name="email" type="email" [(ngModel)]="email"
+           placeholder="Email" autocomplete="email" />
+    <input name="password" type="password" [(ngModel)]="password"
+           placeholder="Password (min. 6 characters)"
+           [autocomplete]="mode() === 'login' ? 'current-password' : 'new-password'" />
+
+    @if (error()) {
+      <p class="error">{{ error() }}</p>
+    }
+
+    <button class="btn primary" type="submit"
+            [disabled]="busy() || !email.trim() || !password ||
+                        (mode() === 'register' && !displayName.trim())">
+      {{ mode() === 'login' ? 'Sign in' : 'Create account' }}
+    </button>
+  </form>
+
+  <p class="toggle">
+    @if (mode() === 'login') {
+      No account yet?
+      <button class="link" type="button" (click)="toggleMode()">Create one</button>
+    } @else {
+      Already have an account?
+      <button class="link" type="button" (click)="toggleMode()">Sign in</button>
+    }
+  </p>
+
+  <div class="divider"><span>or</span></div>
+
+  <button class="btn" type="button" (click)="loginWithGoogle()" [disabled]="busy()">
+    Sign in with Google
+  </button>
 </div>
