@@ -1,20 +1,88 @@
-.page { padding: 20px; max-width: 900px; margin: 0 auto; }
-.actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
+/* ---------- Layout: fill the viewport ---------- */
+:host { display: block; height: 100dvh; }
+
+.page {
+  box-sizing: border-box;
+  height: 100%;
+  padding: clamp(8px, 2vw, 20px);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 12px 16px;
+}
+
+/* When a day is selected, show the detail panel next to the calendar */
+.page:has(.panel) {
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 380px);
+}
 
 .topbar {
+  grid-column: 1 / -1;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 16px;
 }
 .topbar h3 { margin: 0; }
 
 .user { display: flex; align-items: center; gap: 8px; }
 .avatar { width: 28px; height: 28px; border-radius: 50%; }
 
-.panel { margin-top: 24px; padding: 16px; border: 1px solid #ccc; border-radius: 8px; }
+/* ---------- Calendar: stretch to fill its grid cell ---------- */
+mwl-calendar-month-view {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* angular-calendar's own elements live outside this component's
+   style encapsulation, hence ::ng-deep */
+:host ::ng-deep .cal-month-view {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+:host ::ng-deep .cal-month-view .cal-days {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-auto-rows: minmax(0, 1fr); /* every week row gets equal height */
+}
+:host ::ng-deep .cal-month-view .cal-days > * { min-height: 0; }
+:host ::ng-deep .cal-month-view .cal-cell-row { height: 100%; }
+:host ::ng-deep .cal-month-view .cal-cell {
+  flex: 1 1 0;            /* equal width, independent of content */
+  min-width: 0;
+  min-height: 0;          /* override the library's fixed minimum */
+  overflow-y: auto;       /* scroll inside a cell if it has many events */
+  scrollbar-width: thin;
+}
+
+.cal-cell-top { text-align: right; }
+.day-text {
+  margin-top: 2px;
+  padding: 1px 4px;
+  font-size: clamp(9px, 1.1vw, 12px);
+  line-height: 1.3;
+  background: #e8f0fe;
+  border-radius: 3px;
+  white-space: normal;
+  overflow-wrap: anywhere;  /* breaks very long words */
+  text-overflow: clip;
+}
+
+/* ---------- Detail panel ---------- */
+.panel {
+  min-height: 0;
+  overflow-y: auto;
+  padding: 16px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+}
 .panel.login { text-align: center; }
+
+.actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
 
 .row { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
 .row input:not([type='time']) { flex: 1 1 200px; }
@@ -40,18 +108,52 @@
 .btn.primary:hover:not(:disabled) { background: #1765cc; }
 .btn.danger { color: #c62828; border-color: #c62828; }
 
-.cal-cell-top { text-align: right; }
-.day-text {
-  margin-top: 2px;
-  padding: 1px 4px;
-  font-size: 11px;
-  line-height: 1.3;
-  background: #e8f0fe;
-  border-radius: 3px;
-  white-space: normal;
-  overflow-wrap: anywhere;  /* breaks very long words */
-  text-overflow: clip;
-}
-
 .note { margin: 4px 0; }
 .muted { color: #777; }
+
+/* ---------- Narrow screens: stack, let the page scroll ---------- */
+@media (max-width: 800px) {
+  :host { height: auto; min-height: 100dvh; }
+
+  /* No day selected: calendar fills the screen */
+  .page {
+    height: 100dvh;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  /* Day selected: calendar keeps a FIXED height (so rows never grow
+     with content) and the page scrolls down to the panel */
+  .page:has(.panel) {
+    height: auto;
+    min-height: 100dvh;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto clamp(360px, 65dvh, 640px) auto;
+  }
+
+  .panel { overflow: visible; }
+
+  /* Events are clipped to one line so a cell never changes size;
+     tap a day to read the full text in the panel */
+  .day-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  :host ::ng-deep .cal-month-view .cal-cell { overflow: hidden; }
+}
+
+/* ---------- Very slim screens: text won't fit, show a dot instead ---------- */
+@media (max-width: 600px) {
+  .day-text {
+    display: block;
+    width: 8px;
+    height: 8px;
+    margin: 4px auto 0;
+    padding: 0;
+    font-size: 0;            /* hides the text, the title tooltip stays */
+    line-height: 0;
+    background: #1a73e8;
+    border-radius: 50%;
+  }
+}
